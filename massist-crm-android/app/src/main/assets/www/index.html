@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MassistCRM - Sales Force &amp; Distribution Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ==================== TOP NAVBAR ==================== -->
+  <header class="top-navbar">
+    <div class="nav-left">
+      <div class="brand-logo" onclick="switchView('dashboard')" title="Go to Dashboard">
+        <!-- Custom M + Dots Logo matching reference -->
+        <svg width="42" height="28" viewBox="0 0 64 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 33C8 20 13 9 18 9C22 9 24 22 28 22C32 22 35 10 40 10C43 10 46 15 47 21" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="44" cy="24" r="3" fill="#ffffff"/>
+          <circle cx="51" cy="24" r="3" fill="#ffffff"/>
+          <circle cx="58" cy="24" r="3" fill="#ffffff"/>
+          <circle cx="44" cy="31" r="3" fill="#ffffff"/>
+          <circle cx="51" cy="31" r="3" fill="#ffffff"/>
+          <circle cx="58" cy="31" r="3" fill="#ffffff"/>
+        </svg>
+        <div class="brand-title">
+          <span id="navCompanyShort">MassistCRM</span>
+          <span class="brand-sub" id="navCompanySub">FieldForce &amp; Distribution</span>
+        </div>
+      </div>
+
+      <div class="icon-btn-group">
+        <button class="circle-icon-btn" id="btnApprovals" title="Pending Approvals" onclick="toggleHeaderPopover('approvals', event)">
+          <span>✋</span>
+          <span class="circle-badge" id="notifBadgeCount">3</span>
+        </button>
+        <button class="circle-icon-btn" id="btnMessages" title="Messages &amp; Circulars" onclick="toggleHeaderPopover('messages', event)">
+          <span>✉</span>
+        </button>
+        <button class="circle-icon-btn" id="btnAlerts" title="System Alerts" onclick="toggleHeaderPopover('alerts', event)">
+          <span style="font-weight:900;">!</span>
+        </button>
+      </div>
+
+      <div class="global-search-wrap">
+        <div class="global-search-box">
+          <input type="text" id="globalSearchInput" placeholder="Search employees, clients, orders, reports..." oninput="handleGlobalSearch(this.value)" onfocus="handleGlobalSearch(this.value)" />
+          <button onclick="handleGlobalSearch(document.getElementById('globalSearchInput').value)" title="Search">🔍</button>
+        </div>
+        <div class="search-dropdown" id="searchDropdown"></div>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div class="user-pill" onclick="openSettingModal('set-company')" title="Admin &amp; Company Profile">
+        <div class="user-avatar">AD</div>
+        <span style="font-weight:600;">Admin</span>
+      </div>
+      <nav class="top-nav-links">
+        <a class="top-nav-link active" data-view="dashboard" onclick="switchView('dashboard')">DashBoard</a>
+        <a class="top-nav-link" data-view="bi" onclick="switchView('bi')">BI</a>
+        <a class="top-nav-link" data-view="mydata" onclick="switchView('mydata')">MyData</a>
+        <a class="top-nav-link" data-view="myclient" onclick="switchView('myclient')">MyClient</a>
+        <a class="top-nav-link" onclick="handleLogout()">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Header Popover for Notifications / Messages / Alerts -->
+  <div class="header-popover" id="headerPopover"></div>
+
+  <!-- ==================== SUB NAVBAR ==================== -->
+  <div class="sub-navbar">
+    <div class="sub-nav-links">
+      <a class="sub-nav-link" data-view="beat" onclick="switchView('beat')">Beat Management</a>
+      <a class="sub-nav-link" data-view="expense" onclick="switchView('expense')">User Expense</a>
+      <a class="sub-nav-link" data-view="report" onclick="openReportViewer('attendance', 'attendance-sheet')">Report</a>
+    </div>
+    <button class="reports-pill-btn" id="reportsMegaBtn" onclick="toggleReportsMenu(event)">
+      <span>⚙</span>
+      <span>Reports</span>
+    </button>
+  </div>
+
+  <!-- ==================== REPORTS MEGA MENU (Screenshot 2) ==================== -->
+  <div class="reports-mega-menu" id="reportsMegaMenu">
+    <div class="reports-cat-list" id="reportsCatList"></div>
+    <div class="reports-items-grid" id="reportsItemsGrid"></div>
+  </div>
+
+  <!-- ==================== MAIN SHELL ==================== -->
+  <div class="app-shell">
+    <!-- Left Angled Vertical Tabs (Screenshots 1 & 3) -->
+    <aside class="left-vertical-rail">
+      <button class="vertical-tab" data-tab="directories" onclick="toggleSidebarFlyout('directories', event)">
+        <span class="tab-icon">📁</span>
+        <span class="tab-label">Directories</span>
+      </button>
+      <button class="vertical-tab" data-tab="settings" onclick="toggleSidebarFlyout('settings', event)">
+        <span class="tab-icon">⚙</span>
+        <span class="tab-label">Settings</span>
+      </button>
+      <button class="vertical-tab" data-tab="general" onclick="toggleSidebarFlyout('general', event)">
+        <span class="tab-icon">☰</span>
+        <span class="tab-label">General</span>
+      </button>
+    </aside>
+
+    <!-- Sidebar Flyout Menu (Screenshot 3) -->
+    <div class="sidebar-flyout" id="sidebarFlyout">
+      <div class="flyout-grid" id="flyoutGrid"></div>
+    </div>
+
+    <!-- Main Workspace -->
+    <main class="main-workspace">
+
+      <!-- ============ VIEW: DASHBOARD (Screenshot 1) ============ -->
+      <section class="view-section active" id="view-dashboard">
+        <div class="dashboard-layout" id="dashboardLayout">
+
+          <!-- Left KPI Cards Column -->
+          <div class="kpi-sidebar" id="kpiSidebar">
+
+            <!-- Self Target -->
+            <div class="kpi-card" onclick="openSelfTargetModal()">
+              <div class="kpi-left-block self-target-block">
+                <button class="self-target-btn" title="Refresh Dashboard" onclick="event.stopPropagation(); refreshDashboard();">↻</button>
+                <button class="self-target-btn" title="Target Timeline" onclick="event.stopPropagation(); openSelfTargetModal();">🕒</button>
+              </div>
+              <div class="kpi-body">
+                <div class="kpi-header-row">
+                  <span class="kpi-title">Self Target</span>
+                  <span class="kpi-corner-badge badge-blue" id="kpiSelfPct">82%</span>
+                </div>
+                <div class="kpi-sub-lines" id="kpiSelfTargetSub">
+                  Target: ₹27.60L<br/>Achieved: ₹23.06L
+                </div>
+              </div>
+            </div>
+
+            <!-- Login Details -->
+            <div class="kpi-card" onclick="openReportViewer('attendance', 'attendance-sheet')">
+              <div class="kpi-left-block"></div>
+              <div class="kpi-body">
+                <div class="kpi-header-row">
+                  <span class="kpi-title">Login Details</span>
+                  <span class="kpi-corner-badge badge-orange" id="kpiLoginBadge">17</span>
+                </div>
+                <div class="kpi-sub-lines" id="kpiLoginBreakdown">
+                  P-12 , L-0 , WO-0<br/>
+                  MA-5 , (NLY-2 , A-13)
+                </div>
+                <div class="kpi-progress-wrap">
+                  <div class="kpi-progress-bar">
+                    <div class="kpi-progress-fill" id="kpiLoginBar" style="width: 53%;"></div>
+                  </div>
+                  <div class="kpi-progress-meta">
+                    <span id="kpiLoginPctText">53%</span>
+                    <span id="kpiLoginRatioText">17 / 32</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Total Visits FTD -->
+            <div class="kpi-card" onclick="openReportViewer('attendance', 'daily-location')">
+              <div class="kpi-left-block">
+                <span class="kpi-period-tag">FTD</span>
+              </div>
+              <div class="kpi-body">
+                <div class="kpi-header-row">
+                  <span class="kpi-title">Total Visits</span>
+                  <span class="kpi-corner-badge badge-green" id="kpiVisitsFtdBadge">7</span>
+                </div>
+                <div class="kpi-main-value" id="kpiVisitsFtdVal">7</div>
+              </div>
+            </div>
+
+            <!-- Total Visits MTD -->
+            <div class="kpi-card" onclick="openReportViewer('secondary', 'beat-coverage')">
+              <div class="kpi-left-block">
+                <span class="kpi-period-tag">MTD</span>
+              </div>
+              <div class="kpi-body">
+                <div class="kpi-header-row">
+                  <span class="kpi-title">Total Visits</span>
+                  <span class="kpi-corner-badge badge-green" id="kpiVisitsMtdBadge">614</span>
+                </div>
+                <div class="kpi-main-value" id="kpiVisitsMtdVal">1.23K</div>
+              </div>
+            </div>
+
+            <!-- Secondary Orders MTD -->
+            <div class="kpi-card" onclick="openReportViewer('secondary', 'sec-order-detail')">
+              <div class="kpi-left-block">
+                <span class="kpi-period-tag">MTD</span>
+              </div>
+              <div class="kpi-body">
+                <div class="kpi-header-row">
+                  <span class="kpi-title">Secondary Orders</span>
+                  <span class="kpi-corner-badge badge-green" id="kpiSecOrdersBadge">932</span>
+                </div>
+                <div class="kpi-main-value" id="kpiSecOrdersVal">2.66K / 94.05M</div>
+              </div>
+            </div>
+
+            <!-- Primary Sale MTD -->
+            <div class="kpi-card" onclick="openReportViewer('summary', 'daily-sales-summary')">
+              <div class="kpi-left-block">
+                <span class="kpi-period-tag">MTD</span>
+              </div>
+              <div class="kpi-body">
+                <div class="kpi-header-row">
+                  <span class="kpi-title">Primary Sale</span>
+                  <span class="kpi-corner-badge badge-green" id="kpiPrimaryBadge">1</span>
+                </div>
+                <div class="kpi-main-value" id="kpiPrimaryVal">2.67K / 91.54M</div>
+              </div>
+            </div>
+
+            <!-- TC / PC / % Secondary FTD -->
+            <div class="kpi-card" onclick="openReportViewer('summary', 'productivity')">
+              <div class="kpi-left-block">
+                <span class="kpi-period-tag">FTD</span>
+              </div>
+              <div class="kpi-body">
+                <div class="kpi-header-row">
+                  <span class="kpi-title">TC / PC / % Secondary</span>
+                </div>
+                <div class="kpi-main-value" style="margin-top:2px;" id="kpiTcPcVal">7 / 5 (71%)</div>
+                <div class="kpi-progress-wrap">
+                  <div class="kpi-progress-bar">
+                    <div class="kpi-progress-fill" style="width: 100%; background:#64748b;"></div>
+                  </div>
+                  <div class="kpi-progress-meta">
+                    <span>100%</span>
+                    <span>🎯 7.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Total Sale Value Secondary -->
+            <div class="kpi-card" onclick="openReportViewer('secondary', 'sec-order-detail')">
+              <div class="kpi-left-block">
+                <span class="kpi-period-tag">FTD</span>
+              </div>
+              <div class="kpi-body">
+                <div class="kpi-header-row">
+                  <span class="kpi-title">Total Sale Value Secondary</span>
+                </div>
+                <div class="kpi-main-value" id="kpiSecSaleValue">₹4,82,900</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Dashboard Area -->
+          <div class="dashboard-main">
+
+            <!-- Blue Diagonal Striped Filter Bar -->
+            <div class="filter-bar">
+              <select class="filter-select" id="filterZone" onchange="applyDashboardFilters()">
+                <option value="ALL">Select Zone (All)</option>
+              </select>
+              <select class="filter-select" id="filterEmployee" onchange="applyDashboardFilters()">
+                <option value="ALL">Select Employee (All)</option>
+              </select>
+              <select class="filter-select" id="filterBeat" onchange="applyDashboardFilters()">
+                <option value="ALL">Select Beat (All)</option>
+              </select>
+              <div class="date-range-group">
+                <input type="date" id="filterStartDate" value="2026-11-18" onchange="applyDashboardFilters()" />
+                <span>-</span>
+                <input type="date" id="filterEndDate" value="2026-11-25" onchange="applyDashboardFilters()" />
+              </div>
+              <button class="expand-btn" title="Expand / Collapse Workspace" onclick="toggleExpandDashboard()">⤢</button>
+            </div>
+
+            <!-- Status Update Bar -->
+            <div class="status-post-bar">
+              <input type="text" class="status-input" id="statusPostInput" placeholder="My Status..." onkeydown="if(event.key==='Enter') postStatusUpdate();" />
+              <select class="status-scope-select" id="statusScopeSelect" title="Select Audience">
+                <option value="All Team">👤 All Team</option>
+                <option value="North - Rajasthan">👤 North - Rajasthan</option>
+                <option value="West - Gujarat">👤 West - Gujarat</option>
+                <option value="Managers Only">👤 Managers Only</option>
+              </select>
+              <button class="post-btn" onclick="postStatusUpdate()">POST</button>
+            </div>
+
+            <!-- Quick Field Action Buttons -->
+            <div class="quick-action-strip">
+              <button class="action-chip-btn primary" onclick="openNewOrderModal()">+ Book Secondary / Primary Order</button>
+              <button class="action-chip-btn" onclick="openLogVisitModal()">📍 Log Store Visit</button>
+              <button class="action-chip-btn" onclick="openMarkAttendanceModal()">🕒 Mark Attendance</button>
+              <button class="action-chip-btn" onclick="openAddClientModal()">🏪 Add New Client</button>
+              <button class="action-chip-btn" onclick="switchView('bi')">📈 View BI Charts</button>
+            </div>
+
+            <!-- Operational Panels -->
+            <div class="workspace-grid">
+              <!-- Live Employee Field Status -->
+              <div class="panel-box">
+                <div class="panel-header">
+                  <span>Live Field Force Attendance &amp; Visits</span>
+                  <span style="font-weight:500; font-size:11px;" id="dashEmpCountLabel">8 Employees</span>
+                </div>
+                <div class="data-table-wrap" style="border:none;">
+                  <table class="crm-table">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Zone</th>
+                        <th>Status</th>
+                        <th>Login</th>
+                        <th>FTD Visits</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dashEmployeeTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Team Status Feed -->
+              <div class="panel-box">
+                <div class="panel-header">
+                  <span>Team Activity &amp; Status Feed</span>
+                  <span style="font-weight:500; font-size:11px;" id="feedCountLabel">3 Posts</span>
+                </div>
+                <div class="panel-body">
+                  <div class="feed-list" id="statusFeedList"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Orders Summary -->
+            <div class="panel-box" style="margin-top:12px;">
+              <div class="panel-header">
+                <span>Recent Secondary &amp; Primary Orders</span>
+                <button class="btn btn-sm btn-primary" onclick="openNewOrderModal()">+ New Order</button>
+              </div>
+              <div class="data-table-wrap" style="border:none;">
+                <table class="crm-table">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th>Client / Distributor</th>
+                      <th>Sales Officer</th>
+                      <th>Qty</th>
+                      <th>Value</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashOrdersTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: BI ANALYTICS ============ -->
+      <section class="view-section" id="view-bi">
+        <div class="page-header-bar">
+          <div class="page-title">📊 Business Intelligence (BI) — Sales &amp; Coverage Analytics</div>
+          <button class="btn btn-primary" onclick="switchView('dashboard')">← Back to Dashboard</button>
+        </div>
+        <div class="bi-cards-row" id="biStatsRow"></div>
+        <div class="workspace-grid">
+          <div class="panel-box">
+            <div class="panel-header">Zone-wise Sales Performance (Target vs Achieved)</div>
+            <div class="panel-body" id="biZoneChart"></div>
+          </div>
+          <div class="panel-box">
+            <div class="panel-header">Attendance &amp; Field Coverage Split</div>
+            <div class="panel-body" id="biAttendanceChart"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: MY DATA ============ -->
+      <section class="view-section" id="view-mydata">
+        <div class="page-header-bar">
+          <div class="page-title">👤 MyData — Personal Target, Attendance &amp; Orders</div>
+          <button class="btn btn-primary" onclick="switchView('dashboard')">← Back to Dashboard</button>
+        </div>
+        <div id="myDataContent"></div>
+      </section>
+
+      <!-- ============ VIEW: MY CLIENT ============ -->
+      <section class="view-section" id="view-myclient">
+        <div class="page-header-bar">
+          <div class="page-title">🏪 MyClient — Distributors, Retailers &amp; Key Accounts</div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" onclick="openAddClientModal()">+ Add Client</button>
+            <button class="btn" onclick="switchView('dashboard')">← Dashboard</button>
+          </div>
+        </div>
+        <div class="data-table-wrap">
+          <table class="crm-table">
+            <thead>
+              <tr>
+                <th>Client ID</th>
+                <th>Business Name</th>
+                <th>Type</th>
+                <th>Zone</th>
+                <th>Beat</th>
+                <th>Contact Person</th>
+                <th>Phone</th>
+                <th>Outstanding</th>
+                <th>Credit Limit</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="clientsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: BEAT MANAGEMENT ============ -->
+      <section class="view-section" id="view-beat">
+        <div class="page-header-bar">
+          <div class="page-title">🗺 Beat Management — Territory &amp; Route Assignment</div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" onclick="openAddBeatModal()">+ Add New Beat</button>
+            <button class="btn" onclick="switchView('dashboard')">← Dashboard</button>
+          </div>
+        </div>
+        <div class="data-table-wrap">
+          <table class="crm-table">
+            <thead>
+              <tr>
+                <th>Beat ID</th>
+                <th>Beat / Market Name</th>
+                <th>Zone</th>
+                <th>Assigned Sales Officer</th>
+                <th>Visit Day</th>
+                <th>Mapped Outlets</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="beatsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: USER EXPENSE ============ -->
+      <section class="view-section" id="view-expense">
+        <div class="page-header-bar">
+          <div class="page-title">🧾 User Expense — TA / DA &amp; Field Claims</div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" onclick="openAddExpenseModal()">+ Submit Expense Claim</button>
+            <button class="btn" onclick="switchView('dashboard')">← Dashboard</button>
+          </div>
+        </div>
+        <div class="data-table-wrap">
+          <table class="crm-table">
+            <thead>
+              <tr>
+                <th>Claim ID</th>
+                <th>Date</th>
+                <th>Employee</th>
+                <th>Category</th>
+                <th>Distance (KM)</th>
+                <th>Amount (₹)</th>
+                <th>Remark</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="expensesTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: REPORT VIEWER ============ -->
+      <section class="view-section" id="view-report">
+        <div class="page-header-bar">
+          <div class="page-title" id="reportViewerTitle">📄 Report Viewer</div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" id="reportSearchInput" placeholder="Filter rows..." style="height:28px; padding:0 8px; border:1px solid #cbd5e1;" oninput="filterActiveReportRows(this.value)" />
+            <button class="btn btn-success" onclick="exportActiveReportCsv()">⬇ Export CSV</button>
+            <button class="btn" onclick="window.print()">🖨 Print</button>
+            <button class="btn btn-primary" onclick="switchView('dashboard')">← Dashboard</button>
+          </div>
+        </div>
+        <div id="reportViewerDesc" style="margin-bottom:10px; color:#4b5563;"></div>
+        <div class="data-table-wrap" id="reportViewerTableWrap"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ==================== REUSABLE MODAL ==================== -->
+  <div class="modal-backdrop" id="appModal" onclick="if(event.target===this) closeModal()">
+    <div class="modal-card" id="appModalCard">
+      <div class="modal-header">
+        <span id="appModalTitle">Modal Title</span>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body" id="appModalBody"></div>
+      <div class="modal-footer" id="appModalFooter"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-msg" id="toastMsg"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
